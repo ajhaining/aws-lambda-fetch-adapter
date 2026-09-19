@@ -1,0 +1,79 @@
+{
+  "name": "aws-lambda-fetch-adapter",
+  "version": "0.0.0",
+  "description": "Fetch API adapters for API Gateway and Lambda Function URLs",
+  "keywords": [
+    "api-gateway",
+    "aws",
+    "fetch",
+    "function-url",
+    "lambda"
+  ],
+  "homepage": "https://github.com/ajhaining/aws-lambda-fetch-adapter#readme",
+  "bugs": {
+    "url": "https://github.com/ajhaining/aws-lambda-fetch-adapter/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajhaining/aws-lambda-fetch-adapter.git"
+  },
+  "files": [
+    "dist",
+    "src/*.ts",
+    "!src/*.test.ts"
+  ],
+  "type": "module",
+  "exports": {
+    "./api-gateway-v1": "./dist/api-gateway-v1.mjs",
+    "./api-gateway-v2": "./dist/api-gateway-v2.mjs",
+    "./function-url": "./dist/function-url.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check": "npm run fmt:check && npm run lint && npm run typecheck && npm test && npm run knip && npm run build && npm run check:package",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "dev": "tsdown --watch",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "knip": "knip",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "prepare": "husky",
+    "release": "npm run check && semantic-release",
+    "test": "node --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.163"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/types": "^21.2.0",
+    "@types/node": "^24.10.4",
+    "husky": "^9.1.7",
+    "knip": "^6.37.0",
+    "lint-staged": "^17.5.1",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "publint": "^0.3.24",
+    "semantic-release": "^25.0.9",
+    "tsdown": "^0.22.5",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "volta": {
+    "node": "24.21.0",
+    "npm": "12.0.2"
+  }
+}
