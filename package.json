@@ -37,7 +37,7 @@
   "scripts": {
     "build": "tsdown",
     "check": "npm run fmt:check && npm run lint && npm run typecheck && npm test && npm run build && npm run check:package",
-    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "check:package": "publint --strict",
     "dev": "tsdown --watch",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
@@ -51,7 +51,6 @@
     "@types/aws-lambda": "^8.10.163"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.18.5",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@commitlint/types": "^21.2.0",

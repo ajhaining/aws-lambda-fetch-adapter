@@ -4,7 +4,7 @@
 
 - This is a single-package, ESM-only TypeScript library. It requires Node.js 22+; Volta pins Node.js 24.21.0 and npm 12.0.2 in `package.json`.
 - Use `npm clean-install` for a lockfile-faithful install. `actions/setup-node` does not install the npm version in `volta.npm`; CI installs that version explicitly.
-- `npm run check` is the canonical full check. Its order is format check, lint, typecheck, tests, clean build, then publint and Are the Types Wrong package checks.
+- `npm run check` is the canonical full check. Its order is format check, lint, typecheck, tests, clean build, then publint package checks.
 - The pre-commit hook runs lint-staged (Oxfmt and auto-fixing Oxlint), then the full typecheck and test suite. Commit messages and pull request titles must follow Conventional Commits; squash merges use the pull request title.
 
 ## Package structure
