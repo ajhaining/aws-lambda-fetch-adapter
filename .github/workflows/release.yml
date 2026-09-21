@@ -1,0 +1,87 @@
+# Based on https://semantic-release.org/recipes/ci-configurations/github-actions/
+name: Verify and release
+
+on:
+  pull_request:
+    branches: [main, next]
+  push:
+    branches: [main, next]
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+
+jobs:
+  verify:
+    name: Verify (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "24"]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Verify dependency signatures and attestations
+        run: npm audit signatures
+
+      - name: Check source and package
+        run: npm run check
+
+  release:
+    name: Release to npm and GitHub
+    needs: verify
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Serialize both release branches; never interrupt an in-progress publication.
+    concurrency:
+      group: npm-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Check out release history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the Node.js version pinned by Volta
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: package.json
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm clean-install
+
+      - name: Verify dependency signatures and attestations
+        run: npm audit signatures
+
+      - name: Build, verify, and publish
+        run: npm run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional first-publish fallback; normal releases use npm trusted publishing (OIDC).
+          NPM_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+          # npm cannot attest packages built from private source repositories.
+          NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
