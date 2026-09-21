@@ -10,9 +10,6 @@ on:
 permissions:
   contents: read
 
-env:
-  HUSKY: "0"
-
 jobs:
   verify:
     name: Verify (Node ${{ matrix.node }})
