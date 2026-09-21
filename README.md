@@ -8,7 +8,7 @@ Use standard Fetch API `Request` and `Response` objects with AWS Lambda HTTP int
 npm install aws-lambda-fetch-adapter
 ```
 
-The package is ESM-only and requires Node.js 22 or later. The stable AWS Lambda Node.js runtimes are currently 22 and 24; Node.js 26 is a preview runtime.
+The package is ESM-only and requires Node.js 22 or later.
 
 ## Integrations
 
@@ -73,14 +73,14 @@ Streaming is available for Lambda Function URLs and API Gateway REST APIs. The i
 
 API Gateway HTTP APIs do not support Lambda response streaming.
 
-Streaming requires the `awslambda` global supplied by the Lambda Node.js runtime. Bodies are sent as raw bytes, so `binaryMediaTypes` is not a streaming option. See the [REST API streaming setup](https://docs.aws.amazon.com/apigateway/latest/developerguide/response-transfer-mode-lambda.html) for the invocation URI and metadata format.
+Streaming requires the `awslambda` global supplied by the Lambda Node.js runtime. Bodies are sent as raw bytes, so `binaryMediaTypes` is not a streaming option. For REST APIs, response status, headers, cookies, and the metadata delimiter must fit within the first 16 KB. See the [REST API streaming setup](https://docs.aws.amazon.com/apigateway/latest/developerguide/response-transfer-mode-lambda.html) for the invocation URI and metadata format.
 
 ## Errors
 
-Factory-created handlers log unhandled errors and return a plain-text 500 response by default. Use `onError` to control error handling:
+Without `onError`, factory-created handlers log caught errors and return a plain-text 500 response. Use `onError` to control error handling:
 
 - Return a `Response` to handle the error.
-- Return nothing to use the default 500 response.
+- Return nothing to use the same 500 response without automatic logging.
 - Throw or reject to propagate the error to Lambda or an outer wrapper.
 
 ```ts
@@ -92,25 +92,27 @@ export const handler = createHandler(fetchHandler, {
 });
 ```
 
-Buffered handlers catch request conversion, Fetch handler, and response-reading errors. Streaming handlers can replace a response only before metadata is committed; subsequent stream errors propagate to Lambda. Failures in `onError` or its returned response propagate without calling it again. Lower-level conversion and streaming functions propagate errors directly.
+Buffered handlers catch request conversion, Fetch handler, and response conversion errors, including body-reading errors. Streaming handlers catch request conversion, Fetch handler, and response validation errors before streaming; later stream errors propagate to Lambda. Failures in `onError` or validation of its returned response propagate without calling it again. Lower-level conversion and streaming functions propagate errors directly.
 
 ## Conversion Behavior
 
 - `context.event` is the original AWS event, including authorizer data. `context.lambdaContext` is the invocation context when supplied. The handler factories accept a generic event type to retain custom authorizer typing.
 - The request origin comes from `X-Forwarded-Host`, then `Host`, then `requestContext.domainName`, with `X-Forwarded-Proto` or HTTPS as the protocol. Set `{ origin: "https://example.com" }` when your application needs a fixed origin. This overrides only the origin, not the path or headers.
 - Paths come from the event; stage names and custom-domain mapping prefixes are not added. Payload v1 query parameters are reconstructed from AWS's parsed maps, so original query ordering/escaping cannot be recovered. Payload v2 uses `rawPath` and `rawQueryString`.
-- Fetch forbids GET/HEAD request bodies, so those event bodies are ignored.
+- Fetch forbids GET/HEAD request bodies, so those event bodies are ignored. Other base64-encoded event bodies are decoded to bytes; plain event bodies are UTF-8 encoded without adding a content type.
 - Response hop-by-hop headers and `Content-Length` are removed so AWS can frame the response. Separate `Set-Cookie` values are preserved in each integration's cookie representation.
 - Native Node.js `fetch()` decodes supported content encodings but retains the upstream header. The adapter removes stale `Content-Encoding` for those responses. A newly constructed `Response` retains its explicit encoding header; if you wrap a decoded upstream body in a new response, remove the stale encoding header yourself.
 
 ## API
 
-| Entry point      | Exports                                                                                                       |
+| Entry point      | Runtime exports                                                                                               |
 | ---------------- | ------------------------------------------------------------------------------------------------------------- |
 | `api-gateway-v1` | `createHandler`, `createStreamingHandler`, `createHeaders`, `createRequest`, `createResult`, `streamResponse` |
 | `api-gateway-v2` | `createHandler`, `createHeaders`, `createRequest`, `createResult`                                             |
 | `function-url`   | `createHandler`, `createStreamingHandler`, `createHeaders`, `createRequest`, `createResult`, `streamResponse` |
 
 Choose an integration-specific import; the package root intentionally has no adapter export. The consistent function names let applications switch integrations without a runtime event-detection API.
+
+Each entry point also exports its `Handler` type and the shared `ErrorHandler`, `FetchHandler`, `FetchHandlerContext`, `HandlerOptions`, `RequestOptions`, and `ResultOptions` types. The streaming entry points additionally export `StreamingHandlerOptions`.
 
 The lower-level conversion and streaming functions are useful when an application owns the Lambda handler lifecycle. TypeScript applications should install `@types/node` for their runtime to provide the Node.js and Fetch global types.
