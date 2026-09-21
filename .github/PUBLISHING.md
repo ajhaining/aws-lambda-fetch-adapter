@@ -8,27 +8,19 @@ The release job uses `actions/setup-node` with `node-version-file: package.json`
 
 ## npm trusted publishing
 
-Normal releases use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) through OIDC, with no stored npm token. Trusted publishing works while the source repository is private, although provenance does not. Once the package exists, configure a GitHub Actions trusted publisher in the package's npm settings:
+Releases use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) through OIDC, with no stored npm token. Trusted publishing works while the source repository is private, although provenance does not. Configure the GitHub Actions trusted publisher with these values:
 
 | Setting              | Value                                       |
 | -------------------- | ------------------------------------------- |
 | Organization or user | `ajhaining`                                 |
 | Repository           | `aws-lambda-fetch-adapter`                  |
 | Workflow filename    | `release.yml`                               |
-| Environment name     | Leave empty                                 |
+| Environment name     | `npm`                                       |
 | Allowed actions      | Enable direct publishing with `npm publish` |
 
-The release job grants `id-token: write` for OIDC and uses GitHub's automatic `GITHUB_TOKEN` for release tags, GitHub releases, and related issue/pull-request updates. `registry-url` is deliberately absent from setup-node, as recommended by semantic-release, so it does not create conflicting npm authentication configuration.
+The release job targets the protected `npm` GitHub environment and grants `id-token: write` for OIDC. It uses GitHub's automatic `GITHUB_TOKEN` for release tags, GitHub releases, and related issue/pull-request updates. No npm token is passed to the job.
 
-### First-ever publish
-
-npm's package-level trusted publisher configuration requires the package to exist first. For this one-time bootstrap:
-
-1. Create a short-lived npm granular access token with read/write permissions allowing creation of `aws-lambda-fetch-adapter` and **Bypass 2FA** enabled for unattended publishing.
-2. Add it as the repository Actions secret **`NPM_BOOTSTRAP_TOKEN`** before merging the workflow into `main`. The existing `feat:` commit makes the initial history eligible for `1.0.0`.
-3. After the first release, configure the trusted publisher using the values above, then delete the GitHub secret and revoke the token. Subsequent releases authenticate through OIDC, including while the GitHub repository remains private.
-
-The workflow maps this optional bootstrap secret to semantic-release's `NPM_TOKEN` environment variable. When the secret is absent, it is empty and trusted publishing is the authentication path.
+`registry-url` is deliberately absent from setup-node, as recommended by semantic-release, so it does not create conflicting npm authentication configuration. The trusted publisher must allow direct `npm publish`; semantic-release does not use npm staged publishing.
 
 ## Versions and channels
 
