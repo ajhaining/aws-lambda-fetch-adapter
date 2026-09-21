@@ -1,11 +1,11 @@
-# Based on https://semantic-release.org/recipes/ci-configurations/github-actions/
+# Based on https://github.com/googleapis/release-please-action
 name: Verify and release
 
 on:
   pull_request:
-    branches: [main, next]
+    branches: [main]
   push:
-    branches: [main, next]
+    branches: [main]
 
 permissions:
   contents: read
@@ -43,27 +43,47 @@ jobs:
       - name: Check source and package
         run: npm run check
 
-  release:
-    name: Release to npm and GitHub
-    environment: npm
+  release_please:
+    name: Create or update release
     needs: verify
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # Serialize both release branches; never interrupt an in-progress publication.
+    timeout-minutes: 10
     concurrency:
-      group: npm-release
+      group: release-please-main
       cancel-in-progress: false
     permissions:
       contents: write
       issues: write
       pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      sha: ${{ steps.release.outputs.sha }}
+    steps:
+      - name: Create or update release pull request
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+  publish:
+    name: Publish to npm
+    needs: release_please
+    if: needs.release_please.outputs.release_created == 'true'
+    environment: npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: npm-release
+      cancel-in-progress: false
+    permissions:
+      contents: read
       id-token: write
     steps:
-      - name: Check out release history
+      - name: Check out release
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          ref: ${{ needs.release_please.outputs.sha }}
           persist-credentials: false
 
       - name: Set up the Node.js version pinned by Volta
@@ -81,9 +101,11 @@ jobs:
       - name: Verify dependency signatures and attestations
         run: npm audit signatures
 
-      - name: Build, verify, and publish
-        run: npm run release
+      - name: Build package
+        run: npm run build
+
+      - name: Publish package
+        run: npm publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # npm cannot attest packages built from private source repositories.
           NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}

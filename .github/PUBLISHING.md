@@ -1,14 +1,27 @@
 # Publishing
 
-The [verify-and-release workflow](workflows/release.yml) follows the [official semantic-release GitHub Actions recipe](https://semantic-release.org/recipes/ci-configurations/github-actions/): install locked dependencies, verify registry signatures and provenance attestations, run checks, then release only after verification succeeds.
+The [verify-and-release workflow](workflows/release.yml) checks pull requests and pushes to `main` on Node.js 22 and 24. It installs locked dependencies, verifies registry signatures and provenance attestations, and runs the complete source and package checks before any release automation runs.
 
-Pull requests and pushes to `main` and `next` are checked on Node.js 22 and 24. Only pushes to those release branches can publish, and publications are serialized across both branches. Retry a failed run using GitHub's **Re-run jobs** control.
+## Release flow
 
-The release job uses `actions/setup-node` with `node-version-file: package.json`, which reads `volta.node` before `engines.node`. Because setup-node does not install `volta.npm`, both jobs explicitly install that npm version too. The release job uses a fresh, uncached dependency installation and runs `npm run release`, including its check/build pipeline.
+1. Merge normal pull requests with squash merging. The pull request title becomes the commit message on `main`.
+2. After the push passes verification, [Release Please](https://github.com/googleapis/release-please) reads the Conventional Commits since the last release and creates or updates a release pull request.
+3. The release pull request contains the generated `CHANGELOG.md` and updates `package.json`, `package-lock.json`, and `.release-please-manifest.json` to the proposed version. Additional changes merged into `main` update the same release pull request.
+4. Merging the release pull request runs verification again. Release Please then creates the `v<version>` tag and GitHub release, and the workflow publishes that exact commit to npm.
+
+`fix:` proposes a patch, `feat:` a minor, and a breaking change a major. Commits such as `docs:`, `ci:`, and `chore:` are not releasable by default. A scoped `fix(ci):` is still a fix and therefore proposes a patch; use the commit type that reflects whether the published package changed.
+
+To force a specific next version, add `Release-As: x.y.z` to the body of a commit on `main`. Do not manually edit version files outside a generated release pull request except when bootstrapping Release Please.
+
+## GitHub authentication
+
+Release Please uses the repository secret `RELEASE_PLEASE_TOKEN`, containing a fine-grained personal access token limited to this repository with read/write access to Contents, Issues, and Pull requests. A personal token is used instead of `GITHUB_TOKEN` so creation and updates of the release pull request trigger the normal pull request checks.
+
+Rotate the token before it expires. The Release Please action is pinned to an immutable commit in the workflow.
 
 ## npm trusted publishing
 
-Releases use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) through OIDC, with no stored npm token. Trusted publishing works while the source repository is private, although provenance does not. Configure the GitHub Actions trusted publisher with these values:
+npm publication uses [trusted publishing](https://docs.npmjs.com/trusted-publishers/) through OIDC, with no stored npm token. Configure the GitHub Actions trusted publisher with these values:
 
 | Setting              | Value                                       |
 | -------------------- | ------------------------------------------- |
@@ -18,27 +31,10 @@ Releases use [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/
 | Environment name     | `npm`                                       |
 | Allowed actions      | Enable direct publishing with `npm publish` |
 
-The release job targets the protected `npm` GitHub environment and grants `id-token: write` for OIDC. It uses GitHub's automatic `GITHUB_TOKEN` for release tags, GitHub releases, and related issue/pull-request updates. No npm token is passed to the job.
-
-`registry-url` is deliberately absent from setup-node, as recommended by semantic-release, so it does not create conflicting npm authentication configuration. The trusted publisher must allow direct `npm publish`; semantic-release does not use npm staged publishing.
-
-## Versions and channels
-
-- `main` publishes to the `latest` npm dist-tag.
-- `next` publishes prereleases such as `1.1.0-next.1` to the `next` npm dist-tag. Merging those changes into `main` publishes a new stable version, such as `1.1.0`.
-- Conventional Commits determine the release: `fix:` creates a patch, `feat:` a minor, and breaking changes a major. Changes such as `docs:` or `chore:` alone do not create a new version.
-- The checked-in `0.0.0` is a placeholder. semantic-release updates the package version during publishing and records releases with Git tags; there is no version-bump commit to maintain.
-
-Using a prerelease branch is intentional: npm's OIDC support does not cover `npm dist-tag`, which regular-version channel promotion would need. Prerelease-to-stable publishing creates a new version through `npm publish` instead. See the upstream [channel authentication issue](https://github.com/semantic-release/npm/issues/1023).
-
-## Release notes and assets
-
-`release.config.ts` explicitly configures the commit analyzer, release-notes generator, npm publisher, and GitHub publisher bundled with semantic-release. The npm plugin prepares a versioned tarball in `release/`; the GitHub plugin attaches it to the release along with the generated release notes.
-
-The `aws-lambda-fetch-adapter-<version>.tgz` asset is the versioned npm package artifact, containing the built ESM modules, type declarations, maps, implementation sources, README, and license. Stable versions create regular GitHub releases; versions from `next` are marked as prereleases.
+The publish job targets the protected `npm` GitHub environment and grants `id-token: write`. `registry-url`, `NPM_TOKEN`, and `NODE_AUTH_TOKEN` are deliberately absent so npm uses the trusted-publisher identity.
 
 ## Provenance and repository visibility
 
-The npm package is public. While the GitHub repository is private, publishing still uses OIDC but npm cannot generate provenance. The workflow therefore sets `NPM_CONFIG_PROVENANCE` from repository visibility: false while private, then automatically true after the repository becomes public. The release job's `id-token: write` permission supplies the OIDC identity used for trusted publishing and provenance.
+The npm package is public. While the GitHub repository is private, publishing still uses OIDC but npm cannot generate provenance. The workflow therefore sets `NPM_CONFIG_PROVENANCE` from repository visibility: false while private, then automatically true after the repository becomes public.
 
-`publishConfig.provenance` is intentionally omitted from `package.json` so it cannot override this workflow setting. Making the source repository public enables provenance on subsequent releases without changing the workflow.
+`publishConfig.provenance` is intentionally omitted from `package.json` so it cannot override this workflow setting.
