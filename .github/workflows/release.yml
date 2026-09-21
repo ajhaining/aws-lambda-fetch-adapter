@@ -45,6 +45,7 @@ jobs:
 
   release:
     name: Release to npm and GitHub
+    environment: npm
     needs: verify
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -84,7 +85,5 @@ jobs:
         run: npm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional first-publish fallback; normal releases use npm trusted publishing (OIDC).
-          NPM_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
           # npm cannot attest packages built from private source repositories.
           NPM_CONFIG_PROVENANCE: ${{ !github.event.repository.private }}
