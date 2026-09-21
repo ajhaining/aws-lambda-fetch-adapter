@@ -11,7 +11,7 @@ The [verify-and-release workflow](workflows/release.yml) checks pull requests an
 
 `fix:` proposes a patch, `feat:` a minor, and a breaking change a major. Commits such as `docs:`, `ci:`, and `chore:` are not releasable by default. A scoped `fix(ci):` is still a fix and therefore proposes a patch; use the commit type that reflects whether the published package changed.
 
-To force a specific next version, add `Release-As: x.y.z` to the body of a commit on `main`. Do not manually edit version files outside a generated release pull request except when bootstrapping Release Please.
+To force a specific next version, add a `Release-As: x.y.z` footer to a commit on `main`. Do not manually edit version files outside a generated release pull request.
 
 ## GitHub authentication
 
@@ -31,7 +31,9 @@ npm publication uses [trusted publishing](https://docs.npmjs.com/trusted-publish
 | Environment name     | `npm`                                       |
 | Allowed actions      | Enable direct publishing with `npm publish` |
 
-The publish job targets the protected `npm` GitHub environment and grants `id-token: write`. `registry-url`, `NPM_TOKEN`, and `NODE_AUTH_TOKEN` are deliberately absent so npm uses the trusted-publisher identity.
+The publish job targets the branch-restricted `npm` GitHub environment and grants `id-token: write`. `NPM_TOKEN` and `NODE_AUTH_TOKEN` must remain absent so npm uses the trusted-publisher identity. A `registry-url` override is unnecessary because `publishConfig.registry` already selects npmjs.org.
+
+Trusted publishing requires a GitHub-hosted runner, Node.js 22.14 or later, and npm 11.5.1 or later. The workflow's Node.js and npm versions satisfy those requirements and must not be lowered past them.
 
 ## Provenance and repository visibility
 

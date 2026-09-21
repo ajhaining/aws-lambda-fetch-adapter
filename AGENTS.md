@@ -30,5 +30,5 @@
 - Squash merges use the pull request title as the commit Release Please analyzes. Use `fix:` for published fixes, `feat:` for features, and `docs:`, `ci:`, or `chore:` for non-package changes; `fix(ci):` still proposes a patch.
 - Release Please owns `CHANGELOG.md`, the versions in `package.json`, `package-lock.json`, and `.release-please-manifest.json`, and `v<version>` tags. Override a proposal with a `Release-As: x.y.z` commit footer rather than hand-editing generated version changes.
 - `RELEASE_PLEASE_TOKEN` is a fine-grained GitHub token used so generated release pull requests trigger CI. It is unrelated to npm authentication; see `.github/PUBLISHING.md` before changing its permissions or the release flow.
-- The release job must remain attached to the GitHub `npm` environment. npm authentication is tokenless OIDC and requires direct `npm publish`; do not add `NPM_TOKEN` or `registry-url` setup.
+- The release job must remain attached to the GitHub `npm` environment. npm authentication is tokenless OIDC through direct `npm publish`; do not add `NPM_TOKEN` or `NODE_AUTH_TOKEN`. A registry override is unnecessary because `publishConfig.registry` already selects npmjs.org.
 - Provenance is intentionally disabled only while the GitHub repository is private and enables automatically when it becomes public.
