@@ -10,6 +10,12 @@ npm install aws-lambda-fetch-adapter
 
 The package is ESM-only and requires Node.js 22 or later.
 
+TypeScript applications should install the Lambda and Node.js declarations used by the public API:
+
+```sh
+npm install --save-dev @types/aws-lambda @types/node
+```
+
 ## Integrations
 
 | Integration                         | Entry point                               | Response modes         |
@@ -115,4 +121,4 @@ Choose an integration-specific import; the package root intentionally has no ada
 
 Each entry point also exports its `Handler` type and the shared `ErrorHandler`, `FetchHandler`, `FetchHandlerContext`, `HandlerOptions`, `RequestOptions`, and `ResultOptions` types. The streaming entry points additionally export `StreamingHandlerOptions`.
 
-The lower-level conversion and streaming functions are useful when an application owns the Lambda handler lifecycle. TypeScript applications should install `@types/node` for their runtime to provide the Node.js and Fetch global types.
+The lower-level conversion and streaming functions are useful when an application owns the Lambda handler lifecycle.
