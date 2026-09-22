@@ -1,8 +1,44 @@
 version: 2
+
 updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      type-definitions:
+        dependency-type: development
+        patterns:
+          - "@types/*"
+        update-types:
+          - minor
+          - patch
+      development-tooling:
+        dependency-type: development
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: tuesday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
