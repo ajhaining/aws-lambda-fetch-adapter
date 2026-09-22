@@ -1,6 +1,6 @@
 {
   "name": "aws-lambda-fetch-adapter",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Fetch API adapters for API Gateway and Lambda Function URLs",
   "keywords": [
     "api-gateway",
