@@ -2,6 +2,7 @@
 name: Verify and release
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
   push:
@@ -46,7 +47,7 @@ jobs:
   release_please:
     name: Create or update release
     needs: verify
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
