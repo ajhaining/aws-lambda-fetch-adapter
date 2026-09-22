@@ -12,9 +12,9 @@
 - There is intentionally no root adapter export. The public entrypoints are `api-gateway-v1`, `api-gateway-v2`, and `function-url`; keep `package.json` exports and `tsdown.config.ts` entries in sync.
 - `src/shared.ts` and `src/lambda-streaming.ts` are internal. Function URL buffered conversion delegates to API Gateway v2 because their payload shapes match.
 - API Gateway v1 and Function URL support buffered and streaming handlers. API Gateway v2 supports buffered handlers only.
-- `dist/` is ignored generated output. `npm run build` cleans and regenerates unbundled Node 22 ESM, declarations, declaration maps, and source maps; never edit `dist/` directly.
-- Published files include non-test `src/*.ts` so installed declaration maps resolve to implementation sources. Do not remove those sources from the package without changing declaration-map behavior.
-- Keep `@types/aws-lambda` as a production dependency: public declarations reference its `aws-lambda` module types.
+- `dist/` is ignored generated output. `npm run build` cleans and regenerates unbundled Node 22 ESM and declarations without source maps; never edit `dist/` directly.
+- Only `dist/` is published alongside npm's automatic package files. Keep implementation sources and generated maps out of the package.
+- Keep `@types/aws-lambda` as an optional peer and development dependency: public declarations reference its `aws-lambda` module types, but JavaScript consumers do not need it installed.
 
 ## Focused tests
 

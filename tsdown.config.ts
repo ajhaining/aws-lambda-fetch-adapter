@@ -7,11 +7,9 @@ export default defineConfig({
     "function-url": "src/function-url.ts",
   },
   clean: true,
-  // package.json includes the implementation sources so declaration-map targets exist after install.
-  dts: { sourcemap: true },
+  dts: true,
   exports: true,
   platform: "node",
-  sourcemap: true,
   target: "node22",
   unbundle: true,
 });
